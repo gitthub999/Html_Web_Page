@@ -3,68 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Location Tracker</title>
+<title>Live Location</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-  body{font-family:Arial; background:#f0f2f5; margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh;}
-  .container{background:white; padding:25px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1); text-align:center; width:95%; max-width:500px;}
-  button{background:#007bff; color:white; border:none; padding:12px 25px; border-radius:25px; font-size:16px; cursor:pointer; margin-top:10px;}
-  button:hover{background:#0056b3;}
-  #map{height:350px; width:100%; margin-top:20px; border-radius:10px; display:none;}
-  #output{margin-top:15px; font-weight:bold; line-height:1.6;}
+ body{font-family:Arial;background:#f0f2f5;margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh}
+ .container{background:#fff;padding:25px;border-radius:15px;text-align:center;width:95%;max-width:500px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+ button{background:#007bff;color:#fff;border:none;padding:14px 28px;border-radius:25px;font-size:17px;cursor:pointer}
+ #map{height:350px;margin-top:20px;border-radius:10px;display:none}
+ #output{margin-top:15px;font-weight:bold}
 </style>
 </head>
 <body>
 <div class="container">
-  <h2>📍 Live Location</h2>
-  <button onclick="startTracking()">Click to Show My Live Location</button>
-  <div id="output">Click the button to start</div>
+  <h2>📍 Live Location Viewer</h2>
+  <button id="viewBtn">Click to View Location</button>
+  <div id="output">Click button to check permission</div>
   <div id="map"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-let map, marker, watchId;
+let map, marker;
+const btn = document.getElementById("viewBtn");
+const output = document.getElementById("output");
 
-function startTracking(){
-  const output = document.getElementById("output");
-  const mapDiv = document.getElementById("map");
+btn.addEventListener("click", async () => {
+  output.innerHTML = "Checking permission...";
   
-  if(!navigator.geolocation){
-    output.innerHTML = "❌ Geolocation not supported";
-    return;
-  }
-
-  output.innerHTML = "⌛ Getting location... Allow permission";
-
-  // First time get
-  navigator.geolocation.getCurrentPosition(showPosition, showError, {enableHighAccuracy:true});
-  
-  // Live watch
-  watchId = navigator.geolocation.watchPosition(showPosition, showError, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
-
-  function showPosition(pos){
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    const acc = pos.coords.accuracy;
-    const speed = pos.coords.speed ? (pos.coords.speed*3.6).toFixed(1) : 0;
-
-    output.innerHTML = `✅ Live Tracking ON<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}<br>Accuracy: ${Math.round(acc)}m<br>Speed: ${speed} km/h<br><a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Open in Google Maps</a>`;
-
-    mapDiv.style.display = "block";
+  // 1. Permission check
+  try {
+    const status = await navigator.permissions.query({name: 'geolocation'});
     
-    if(!map){
-      map = L.map('map').setView([lat, lng], 16);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-      marker = L.marker([lat, lng]).addTo(map);
-    } else {
-      map.setView([lat, lng], map.getZoom());
-      marker.setLatLng([lat, lng]);
+    if (status.state === 'denied') {
+      output.innerHTML = `❌ You have DENIED location before.<br><br>🔒 Upore lock icon e click kore<br><b>Location > Allow</b> koro<br>Tarpor abar click koro.`;
+      return;
     }
+    
+    // 2. Jodi granted / prompt hoy - taholei popup asbe
+    output.innerHTML = "⌛ Please click ALLOW in popup...";
+    
+    navigator.geolocation.getCurrentPosition(success, error, {
+      enableHighAccuracy: true,
+      timeout: 10000
+    });
+    
+  } catch(e) {
+    // Old browser - direct popup
+    navigator.geolocation.getCurrentPosition(success, error, {enableHighAccuracy: true});
   }
+});
 
-  function showError(err){
-    output.innerHTML = `❌ Error: ${err.message}<br>Please allow location permission`;
+function success(pos){
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+  
+  output.innerHTML = `✅ Permission ALLOWED<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}<br><a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Open in Google Maps</a>`;
+  
+  document.getElementById("map").style.display = "block";
+  if(!map){
+    map = L.map('map').setView([lat,lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    marker = L.marker([lat,lng]).addTo(map).bindPopup("You are here").openPopup();
+  } else {
+    map.setView([lat,lng]);
+    marker.setLatLng([lat,lng]);
+  }
+}
+
+function error(err){
+  if(err.code === 1){
+    output.innerHTML = `❌ You clicked DENY / BLOCKED<br>Browser e ar popup asbe na.<br>Lock icon > Allow korte hobe.`;
+  } else {
+    output.innerHTML = `❌ Error: ${err.message}`;
   }
 }
 </script>
