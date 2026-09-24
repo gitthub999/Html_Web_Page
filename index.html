@@ -3,82 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Info</title>
+<title>Live Full Info Auto</title>
 <style>
- body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
-.box{background:#fff;padding:20px;border-radius:15px;width:95%;max-width:500px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
- button{background:#007bff;color:#fff;border:none;padding:14px;width:100%;border-radius:25px;font-size:16px;cursor:pointer}
- #output{margin-top:15px;background:#f8f9fa;padding:15px;border-radius:10px;font-size:14px;line-height:2;word-break:break-all}
- b{color:#007bff}
+ body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:10px}
+.box{background:#fff;padding:20px;border-radius:15px;width:100%;max-width:500px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+ #output{background:#f8f9fa;padding:15px;border-radius:12px;font-size:14px;line-height:2.2;margin-top:10px}
+ b{color:#000} span{color:#007bff;font-weight:bold}
 </style>
 </head>
 <body>
 <div class="box">
-  <h3 style="text-align:center">📍 Live Device Info</h3>
-  <button id="btn">Click to Start Live</button>
-  <div id="output">Click button</div>
+  <h3 style="text-align:center">📱 Live Full Tracker</h3>
+  <div id="output">⌛ Location Allow koren...</div>
 </div>
 
 <script>
-document.getElementById("btn").addEventListener("click", async () => {
+function getRealBrand(){
+  const ua = navigator.userAgent.toLowerCase();
+  if(ua.includes("iphone")) return "Apple iPhone";
+  if(ua.includes("samsung") || ua.includes("sm-")) return "Samsung";
+  if(ua.includes("redmi") || ua.includes("xiaomi") || ua.includes(" mi ") || ua.includes("poco")) return "Xiaomi / Redmi / POCO";
+  if(ua.includes("oppo") || ua.includes("cph")) return "OPPO";
+  if(ua.includes("vivo") || ua.includes("v2")) return "Vivo";
+  if(ua.includes("realme") || ua.includes("rmx")) return "Realme";
+  if(ua.includes("infinix")) return "Infinix";
+  if(ua.includes("tecno")) return "Tecno";
+  if(ua.includes("huawei") || ua.includes("honor")) return "Huawei / Honor";
+  if(ua.includes("oneplus")) return "OnePlus";
+  return "Android Phone";
+}
+
+async function startLive(){
   const out = document.getElementById("output");
-  out.innerHTML = "Loading...";
-
-  // 1. Brand + Browser ber kora
-  let brand = "Unknown";
-  let browser = "Unknown";
-  let model = "Blocked by Browser";
-
   const ua = navigator.userAgent;
-
-  // Browser detect
-  if(ua.includes("Chrome") &&!ua.includes("Edg")) browser = "Chrome";
+  let browser = "Unknown";
+  if(ua.includes("Chrome") && !ua.includes("Edg") && !ua.includes("OPR")) browser = "Chrome";
   else if(ua.includes("Firefox")) browser = "Firefox";
-  else if(ua.includes("Safari") &&!ua.includes("Chrome")) browser = "Safari";
   else if(ua.includes("Edg")) browser = "Edge";
-  else if(ua.includes("Opera")) browser = "Opera";
+  else if(ua.includes("OPR") || ua.includes("Opera")) browser = "Opera";
+  else if(ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
 
-  // Brand detect from UA
-  if(ua.includes("iPhone")) brand = "Apple iPhone";
-  else if(ua.includes("Samsung")) brand = "Samsung";
-  else if(ua.includes("Redmi") || ua.includes("Xiaomi")) brand = "Xiaomi / Redmi";
-  else if(ua.includes("OPPO")) brand = "OPPO";
-  else if(ua.includes("Vivo")) brand = "Vivo";
-  else if(ua.includes("Realme")) brand = "Realme";
-  else if(ua.includes("Infinix")) brand = "Infinix";
-  else if(ua.includes("Tecno")) brand = "Tecno";
-  else brand = navigator.platform;
-
-  // New API te aro valo brand pawa jay
+  const brand = getRealBrand();
+  let model = "Hidden (Browser Block)";
   if(navigator.userAgentData){
     try{
-      const high = await navigator.userAgentData.getHighEntropyValues(["model","platform","fullVersionList"]);
-      brand = navigator.userAgentData.brands.map(b=>b.brand).join(", ");
-      model = high.model || "Hidden";
-      browser = high.fullVersionList[0].brand + " " + high.fullVersionList[0].version;
+      const d = await navigator.userAgentData.getHighEntropyValues(["model"]);
+      if(d.model) model = d.model;
     }catch(e){}
   }
 
-  // 2. Live Location
-  navigator.geolocation.watchPosition((pos)=>{
-    const lat = pos.coords.latitude.toFixed(6);
-    const lng = pos.coords.longitude.toFixed(6);
-    const time = new Date().toLocaleString("en-US", {timeZone:"Asia/Dhaka"});
+  navigator.geolocation.watchPosition(async (pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const time = new Date().toLocaleString("en-BD", {timeZone:"Asia/Dhaka", hour12:true});
+    let batteryText = "Not Supported";
+    if(navigator.getBattery){
+      const b = await navigator.getBattery();
+      batteryText = Math.round(b.level*100) + "% " + (b.charging? "⚡ Charging" : "🔋");
+    }
+    let placeName = "Loading...";
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await res.json();
+      placeName = data.display_name || "Address not found";
+    }catch(e){ placeName = "Address failed"; }
 
     out.innerHTML = `
-      <b>Brand:</b> ${brand}<br>
-      <b>Model:</b> ${model}<br>
-      <b>Browser:</b> ${browser}<br>
-      <b>Platform:</b> ${navigator.platform}<br>
-      <b>Latitude:</b> ${lat}<br>
-      <b>Longitude:</b> ${lng}<br>
-      <b>Time (BD):</b> ${time}<br>
-      <b>Accuracy:</b> ${Math.round(pos.coords.accuracy)}m
+      <b>Phoner Brand:</b> <span>${brand}</span><br>
+      <b>Phone Model:</b> <span>${model}</span><br>
+      <b>Browser Name:</b> <span>${browser}</span><br>
+      <b>Battery Charge:</b> <span>${batteryText}</span><br>
+      <b>Time (BD):</b> <span>${time}</span><br>
+      <b>Latitude:</b> <span>${lat.toFixed(6)}</span><br>
+      <b>Longitude:</b> <span>${lng.toFixed(6)}</span><br>
+      <b>Jagar Name:</b> <span>${placeName}</span><br><br>
+      <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">📍 Map e Dekho</a>
     `;
-  }, (err)=>{
-    out.innerHTML = "❌ " + err.message;
+  }, (err) => {
+    out.innerHTML = "❌ Please Allow Location: " + err.message;
   }, {enableHighAccuracy:true});
-});
+}
+
+window.onload = startLive;
 </script>
 </body>
 </html>
