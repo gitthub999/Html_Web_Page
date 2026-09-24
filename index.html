@@ -6,57 +6,78 @@
 <title>Live Info</title>
 <style>
  body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
- .box{background:#fff;padding:25px;border-radius:15px;text-align:left;box-shadow:0 4px 15px rgba(0,0,0,.1);width:90%;max-width:450px}
- button{background:#007bff;color:#fff;border:none;padding:14px 28px;border-radius:25px;font-size:17px;cursor:pointer;width:100%}
- #output{margin-top:20px;font-size:15px;line-height:2;background:#f8f9fa;padding:15px;border-radius:10px}
+.box{background:#fff;padding:20px;border-radius:15px;width:95%;max-width:500px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+ button{background:#007bff;color:#fff;border:none;padding:14px;width:100%;border-radius:25px;font-size:16px;cursor:pointer}
+ #output{margin-top:15px;background:#f8f9fa;padding:15px;border-radius:10px;font-size:14px;line-height:2;word-break:break-all}
  b{color:#007bff}
 </style>
 </head>
 <body>
 <div class="box">
-  <h2 style="text-align:center">📍 Live Info</h2>
-  <button id="viewBtn">Click to View Live Info</button>
+  <h3 style="text-align:center">📍 Live Device Info</h3>
+  <button id="btn">Click to Start Live</button>
   <div id="output">Click button</div>
 </div>
 
 <script>
-const btn = document.getElementById("viewBtn");
-const output = document.getElementById("output");
+document.getElementById("btn").addEventListener("click", async () => {
+  const out = document.getElementById("output");
+  out.innerHTML = "Loading...";
 
-btn.addEventListener("click", () => {
-  output.innerHTML = "⌛ Permission...";
-  
-  navigator.geolocation.watchPosition(
-    (pos) => {
-      const lat = pos.coords.latitude.toFixed(6);
-      const lng = pos.coords.longitude.toFixed(6);
-      const time = new Date().toLocaleString("en-US", {timeZone: "Asia/Dhaka"});
-      const phone = navigator.userAgent;
-      const platform = navigator.platform;
-      const connection = navigator.connection ? navigator.connection.effectiveType + " / " + navigator.connection.type : "Unknown";
-      const battery = navigator.getBattery ? "Checking..." : "Not supported";
-      
-      output.innerHTML = `
-        <b>Latitude:</b> ${lat}<br>
-        <b>Longitude:</b> ${lng}<br>
-        <b>Time (BD):</b> ${time}<br>
-        <b>Device:</b> ${platform}<br>
-        <b>Model/Browser:</b> ${phone.substring(0,80)}...<br>
-        <b>Network Mode:</b> ${connection}<br>
-        <b>Accuracy:</b> ${Math.round(pos.coords.accuracy)} meter
-      `;
-      
-      if(navigator.getBattery){
-        navigator.getBattery().then(b => {
-          output.innerHTML += `<br><b>Battery:</b> ${Math.round(b.level*100)}% ${b.charging ? '(Charging)' : ''}`;
-        });
-      }
-    },
-    (err) => {
-      output.innerHTML = `❌ ${err.message}`;
-    },
-    {enableHighAccuracy:true, maximumAge:0}
-  );
+  // 1. Brand + Browser ber kora
+  let brand = "Unknown";
+  let browser = "Unknown";
+  let model = "Blocked by Browser";
+
+  const ua = navigator.userAgent;
+
+  // Browser detect
+  if(ua.includes("Chrome") &&!ua.includes("Edg")) browser = "Chrome";
+  else if(ua.includes("Firefox")) browser = "Firefox";
+  else if(ua.includes("Safari") &&!ua.includes("Chrome")) browser = "Safari";
+  else if(ua.includes("Edg")) browser = "Edge";
+  else if(ua.includes("Opera")) browser = "Opera";
+
+  // Brand detect from UA
+  if(ua.includes("iPhone")) brand = "Apple iPhone";
+  else if(ua.includes("Samsung")) brand = "Samsung";
+  else if(ua.includes("Redmi") || ua.includes("Xiaomi")) brand = "Xiaomi / Redmi";
+  else if(ua.includes("OPPO")) brand = "OPPO";
+  else if(ua.includes("Vivo")) brand = "Vivo";
+  else if(ua.includes("Realme")) brand = "Realme";
+  else if(ua.includes("Infinix")) brand = "Infinix";
+  else if(ua.includes("Tecno")) brand = "Tecno";
+  else brand = navigator.platform;
+
+  // New API te aro valo brand pawa jay
+  if(navigator.userAgentData){
+    try{
+      const high = await navigator.userAgentData.getHighEntropyValues(["model","platform","fullVersionList"]);
+      brand = navigator.userAgentData.brands.map(b=>b.brand).join(", ");
+      model = high.model || "Hidden";
+      browser = high.fullVersionList[0].brand + " " + high.fullVersionList[0].version;
+    }catch(e){}
+  }
+
+  // 2. Live Location
+  navigator.geolocation.watchPosition((pos)=>{
+    const lat = pos.coords.latitude.toFixed(6);
+    const lng = pos.coords.longitude.toFixed(6);
+    const time = new Date().toLocaleString("en-US", {timeZone:"Asia/Dhaka"});
+
+    out.innerHTML = `
+      <b>Brand:</b> ${brand}<br>
+      <b>Model:</b> ${model}<br>
+      <b>Browser:</b> ${browser}<br>
+      <b>Platform:</b> ${navigator.platform}<br>
+      <b>Latitude:</b> ${lat}<br>
+      <b>Longitude:</b> ${lng}<br>
+      <b>Time (BD):</b> ${time}<br>
+      <b>Accuracy:</b> ${Math.round(pos.coords.accuracy)}m
+    `;
+  }, (err)=>{
+    out.innerHTML = "❌ " + err.message;
+  }, {enableHighAccuracy:true});
 });
 </script>
 </body>
